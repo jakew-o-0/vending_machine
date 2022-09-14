@@ -1,7 +1,10 @@
 import tkinter
+import sqlite3
 
-class gui:
+class gui():
     def __init__(self, root):
+        self.dataBase = sqlite3.connect('Vending_Machine.db')
+
         self.root = root
         self.root.resizable(False,  False)
         self.main()
@@ -27,7 +30,8 @@ class gui:
 
         searchLib = tkinter.Label(frame, text="If you know what you want...",font=("TkDefaultFont", 8))
         searchLib1 = tkinter.Label(frame, text="Search!", font=("TkDefaultFont", 20))
-        searchEntry = tkinter.Entry(frame, width=15)
+        self.searchStr = tkinter.StringVar()
+        searchEntry = tkinter.Entry(frame, width=15, textvariable=self.searchStr)
         searchButton = tkinter.Button(frame, text="Enter", command=self.search_window)
 
         searchLib.grid(column=0, row=0, columnspan=2, sticky='w')
@@ -42,7 +46,7 @@ class gui:
 
         searchLib2 = tkinter.Label(frame2, text="Not sure what to get?", font=("TkDefaultFont", 8))
         searchLib3 = tkinter.Label(frame2, text="Try these!", font=("TkDefaultFont", 20))
-        searchAllBtn = tkinter.Button(frame2, text="Browse all", command=self.search_window)
+        searchAllBtn = tkinter.Button(frame2, text="Browse all", command=self.search_all)
         searchRandBtn = tkinter.Button(frame2, text="Random", command=self.search_window)
 
         searchLib2.grid(column=0, row=0, columnspan=2, sticky='w')
@@ -52,14 +56,43 @@ class gui:
 
     def search_window(self):
         dataWindow = tkinter.Toplevel(self.root)
-        noneFound = tkinter.Label(dataWindow, text="Item not found :(")
-        noneFound.pack()
+        try:
+            self.query_items(self.searchStr.get())
+        except(Exception):
+            noneFound = tkinter.Label(dataWindow, text="Item not found :(")
+            noneFound.pack()
 
+    def search_all(self):
+        all = tkinter.Toplevel(self.root)
+        all.resizable(False,False)
+
+        ########: query the database items for all records
+        query = self.dataBase.execute("SELECT * FROM items;")
+        query = list(query)
+
+        ########: itterate trough the 2d array given by the sql
+        for i in range(0, len(query)):
+            for j in range(0, len(query[0])):
+
+                ########: give each record a seperate label in a grid
+                l = tkinter.Label(all, text=query[i][j])
+                l.grid(column=j, row=i)
+        
     def account_window(self):
-        acountWindow = tkinter.Toplevel(self.root)
+        acountWindow = tkinter.Toplevel()
+        acountWindow.resizable(False,False)
+        
+        acountLab = tkinter.Label(acountWindow, text="Username")
+        acountLab1 = tkinter.Label(acountWindow, text="Recently bought")
+        acountBtn = tkinter.Button(acountWindow, text="Change Password")
+
+        acountLab.pack()
+        acountBtn.pack()
+        acountLab1.pack()
     
     def basket_window(self):
         basketWindow = tkinter.Toplevel(self.root)
+        basketWindow.resizable(False,False)
     
     def logon_window(self):
         logonWindow = tkinter.Toplevel(self.root)
@@ -79,6 +112,11 @@ class gui:
         logonEntry1.grid(column=1, row=2)
         logonBtn.grid(column=0, row=3, columnspan=2)
 
+
+
+    def query_items(self, query):
+        search = self.dataBase.execute("SELECT * FROM items WHERE NAME == '{}'".format(str(query)))
+        print(search)
 
 if(__name__ == "__main__"):
     tk = tkinter.Tk()
