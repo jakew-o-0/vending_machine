@@ -1,9 +1,11 @@
 import tkinter
 import sqlite3
+from random import randint
 
 class gui():
     def __init__(self, root):
         self.dataBase = sqlite3.connect('Vending_Machine.db')
+        self.currentUsr = ""
 
         self.root = root
         self.root.resizable(False,  False)
@@ -32,7 +34,7 @@ class gui():
         searchLib1 = tkinter.Label(frame, text="Search!", font=("TkDefaultFont", 20))
         self.searchStr = tkinter.StringVar()
         searchEntry = tkinter.Entry(frame, width=15, textvariable=self.searchStr)
-        searchButton = tkinter.Button(frame, text="Enter", command=self.search_window)
+        searchButton = tkinter.Button(frame, text="Enter", command=lambda: self.search_window(btn=1))
 
         searchLib.grid(column=0, row=0, columnspan=2, sticky='w')
         searchLib1.grid(column=0, columnspan=2, row=1)
@@ -46,17 +48,25 @@ class gui():
 
         searchLib2 = tkinter.Label(frame2, text="Not sure what to get?", font=("TkDefaultFont", 8))
         searchLib3 = tkinter.Label(frame2, text="Try these!", font=("TkDefaultFont", 20))
-        searchAllBtn = tkinter.Button(frame2, text="Browse all", command=self.search_all)
-        searchRandBtn = tkinter.Button(frame2, text="Random", command=self.search_window)
+        searchAllBtn = tkinter.Button(frame2, text="Browse all", command=lambda: self.search_window(btn=2))
+        searchRandBtn = tkinter.Button(frame2, text="Random", command=lambda: self.search_window(btn=3))
 
         searchLib2.grid(column=0, row=0, columnspan=2, sticky='w')
         searchLib3.grid(column=0, row=1, columnspan=2)
         searchAllBtn.grid(column=0, row=2)
-        searchRandBtn.grid(column=1, row=2)
+        searchRandBtn.grid(column=1, row=2) 
 
-    def search_window(self):
+    def search_window(self, btn):
         dataWindow = tkinter.Toplevel(self.root)
-        query = list(self.dataBase.execute("SELECT * FROM items WHERE NAME = '{}'".format(str(self.searchStr.get()))))
+        dataWindow.resizable(False, False)
+
+        if(btn == 1):
+            query = list(self.dataBase.execute("SELECT * FROM items WHERE NAME = '{}'".format(str(self.searchStr.get()))))
+        else:
+            query = list(self.dataBase.execute("SELECT * FROM items;"))
+            if(btn == 3):
+                rand = randint(1, len(query))
+                query = list(self.dataBase.execute("SELECT * FROM items WHERE ID = {}".format(rand)))
 
         ########: itterate trough the 2d array given by the sql
         for i in range(0, len(query)):
@@ -66,22 +76,7 @@ class gui():
                 l = tkinter.Label(dataWindow, text=query[i][j])
                 l.grid(column=j, row=i)
 
-    def search_all(self):
-        all = tkinter.Toplevel(self.root)
-        all.resizable(False,False)
 
-        ########: query the database items for all records
-        query = self.dataBase.execute("SELECT * FROM items;")
-        query = list(query)
-
-        ########: itterate trough the 2d array given by the sql
-        for i in range(0, len(query)):
-            for j in range(0, len(query[0])):
-
-                ########: give each record a seperate label in a grid
-                l = tkinter.Label(all, text=query[i][j])
-                l.grid(column=j, row=i)
-                
     def account_window(self):
         acountWindow = tkinter.Toplevel()
         acountWindow.resizable(False,False)
@@ -105,18 +100,43 @@ class gui():
         logonLab = tkinter.Label(logonWindow, text="Login", font=("TkDefaultFont", 15))
         logonLab1 = tkinter.Label(logonWindow, text="Username")
         logonLab2 = tkinter.Label(logonWindow, text="Password")
-        logonEntry = tkinter.Entry(logonWindow)
-        logonEntry1 = tkinter.Entry(logonWindow, show='*')
-        logonBtn = tkinter.Button(logonWindow, text="Enter")
+        logonStr = tkinter.StringVar()
+        logonStr1 = tkinter.StringVar()
+        logonEntry = tkinter.Entry(logonWindow, textvariable=logonStr)
+        logonEntry1 = tkinter.Entry(logonWindow, show='*', textvariable=logonStr1)
+        logonBtn = tkinter.Button(logonWindow, text="Enter", command=lambda: self.login(usr=logonStr.get(),passwd=logonStr1.get(), win=logonWindow, isNewusr=isNewusr))
+        isNewusr = False
+        logonNewUsr = tkinter.Checkbutton(logonWindow, text="create a newuser", variable=isNewusr, onvalue=True, offvalue=False)
 
         logonLab.grid(column=0, row=0, columnspan=2)
         logonLab1.grid(column=0, row=1)
         logonLab2.grid(column=0, row=2)
         logonEntry.grid(column=1, row=1)
         logonEntry1.grid(column=1, row=2)
-        logonBtn.grid(column=0, row=3, columnspan=2)
+        logonBtn.grid(column=0, row=4, columnspan=2)
+        logonNewUsr.grid(column=0, row=3)
 
+    def login(self, usr, passwd, win, isNewusr):
+        try:
+            out.destroy()
+        except(Exception):
+            pass
+        out = tkinter.Label(win)
+        print(isNewusr)
 
+        if(isNewusr == True):
+            query = len(list(self.dataBase.execute("SELECT * FROM users;")))
+            query = self.dataBase.execute("INSERT INTO users (ID, NAME, PASSWORDS) VALUES({},'{}', '{}');".format(query + 1, usr, passwd))
+        else:
+            try:
+                query = self.dataBase.execute("SELECT NAME, PASSWORDS  FROM users WHERE NAME = '{}' AND PASSWORDS = '{}';".format(str(usr), str(passwd)))
+                q = list(query)
+                self.currentUsr = q[0][0] 
+                out.config(text="you have been logged in!")
+            except(Exception):
+                out.config(text="Oops username or password is incorrect")
+            out.grid(column=0, row=5, columnspan=2)
+            
     
 if(__name__ == "__main__"):
     tk = tkinter.Tk()
