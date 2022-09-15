@@ -97,6 +97,7 @@ class gui():
         logonWindow = tkinter.Toplevel(self.root)
         logonWindow.resizable(False, False)
 
+        self.isNewusr = False
         logonLab = tkinter.Label(logonWindow, text="Login", font=("TkDefaultFont", 15))
         logonLab1 = tkinter.Label(logonWindow, text="Username")
         logonLab2 = tkinter.Label(logonWindow, text="Password")
@@ -104,11 +105,10 @@ class gui():
         logonStr1 = tkinter.StringVar()
         logonEntry = tkinter.Entry(logonWindow, textvariable=logonStr)
         logonEntry1 = tkinter.Entry(logonWindow, show='*', textvariable=logonStr1)
-        logonBtn = tkinter.Button(logonWindow, text="Enter", command=lambda: self.login(usr=logonStr.get(),passwd=logonStr1.get(), win=logonWindow, isNewusr=isNewusr))
-        isNewusr = False
-        logonNewUsr = tkinter.Checkbutton(logonWindow, text="create a newuser", variable=isNewusr, onvalue=True, offvalue=False)
+        logonBtn = tkinter.Button(logonWindow, text="Enter", command=lambda: self.login(usr=logonStr.get(),passwd=logonStr1.get(), win=logonWindow))
+        logonNewUsr = tkinter.Checkbutton(logonWindow, text="create a newuser", variable=self.isNewusr, onvalue=True, offvalue=False, command=self.newusr)
 
-        logonLab.grid(column=0, row=0, columnspan=2)
+        logonLab.grid(column=0, row=0, columnspan=2)    
         logonLab1.grid(column=0, row=1)
         logonLab2.grid(column=0, row=2)
         logonEntry.grid(column=1, row=1)
@@ -116,15 +116,15 @@ class gui():
         logonBtn.grid(column=0, row=4, columnspan=2)
         logonNewUsr.grid(column=0, row=3)
 
-    def login(self, usr, passwd, win, isNewusr):
+    def login(self, usr, passwd, win):
         try:
             out.destroy()
         except(Exception):
             pass
         out = tkinter.Label(win)
-        print(isNewusr)
+        print(self.isNewusr)
 
-        if(isNewusr == True):
+        if(self.isNewusr == True):
             query = len(list(self.dataBase.execute("SELECT * FROM users;")))
             query = self.dataBase.execute("INSERT INTO users (ID, NAME, PASSWORDS) VALUES({},'{}', '{}');".format(query + 1, usr, passwd))
         else:
@@ -136,6 +136,9 @@ class gui():
             except(Exception):
                 out.config(text="Oops username or password is incorrect")
             out.grid(column=0, row=5, columnspan=2)
+    
+    def newusr(self):
+        self.isNewusr = not(self.isNewusr)
             
     
 if(__name__ == "__main__"):
