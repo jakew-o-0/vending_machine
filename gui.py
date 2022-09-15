@@ -56,11 +56,15 @@ class gui():
 
     def search_window(self):
         dataWindow = tkinter.Toplevel(self.root)
-        try:
-            self.query_items(self.searchStr.get())
-        except(Exception):
-            noneFound = tkinter.Label(dataWindow, text="Item not found :(")
-            noneFound.pack()
+        query = list(self.dataBase.execute("SELECT * FROM items WHERE NAME = '{}'".format(str(self.searchStr.get()))))
+
+        ########: itterate trough the 2d array given by the sql
+        for i in range(0, len(query)):
+            for j in range(0, len(query[0])):
+
+                ########: give each record a seperate label in a grid
+                l = tkinter.Label(dataWindow, text=query[i][j])
+                l.grid(column=j, row=i)
 
     def search_all(self):
         all = tkinter.Toplevel(self.root)
@@ -77,7 +81,7 @@ class gui():
                 ########: give each record a seperate label in a grid
                 l = tkinter.Label(all, text=query[i][j])
                 l.grid(column=j, row=i)
-        
+                
     def account_window(self):
         acountWindow = tkinter.Toplevel()
         acountWindow.resizable(False,False)
@@ -113,11 +117,7 @@ class gui():
         logonBtn.grid(column=0, row=3, columnspan=2)
 
 
-
-    def query_items(self, query):
-        search = self.dataBase.execute("SELECT * FROM items WHERE NAME == '{}'".format(str(query)))
-        print(search)
-
+    
 if(__name__ == "__main__"):
     tk = tkinter.Tk()
     gui = gui(tk)
