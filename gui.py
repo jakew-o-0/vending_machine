@@ -83,7 +83,7 @@ class gui():
         f = tkinter.Frame(dataWindow,padx=5,pady=5)
         sVAR = tkinter.StringVar(value=1)
         sVAR1 = tkinter.StringVar()
-        b = tkinter.Button(f, text="Add to basket", comman=lambda: self.add_to_basket(item=sVAR1.get(), quantity=sVAR.get()))
+        b = tkinter.Button(f, text="Add to basket", comman=lambda: self.add_to_basket(item=sVAR1.get(), quantity=sVAR.get(), win=f))
         e = tkinter.Entry(f, textvariable=sVAR1)
         l = tkinter.Label(f, text="Item number or name:")
         l1 = tkinter.Label(f, text="Quantity:")
@@ -96,8 +96,28 @@ class gui():
         l1.grid(column=0, row=1)
         s.grid(column=1, row=1)
 
-    def add_to_basket(self, item, quantity):
-        pass
+    def add_to_basket(self, item, quantity, win):
+        if(self.currentUsr == None):
+            l = tkinter.Label(win, text="you are not currently logged in, please login")
+            l.grid(column=0, row=3, columnspan=2)
+        else:
+            ########: if the item can be casted then the database will be queried for the name of said item with the id int
+            try:
+                item = int(item)
+                query = list(self.dataBase.execute("SELECT NAME FROM items WHERE ID = {}".format(item)))
+                item = query[0][0]
+            except(Exception):
+                pass
+                
+            #######: if there is an existing record in the basket it will update the quantity otherwise make a new record
+            query = list(self.dataBase.execute("SELECT QUANTITY FROM '{}' WHERE ITEM = '{}';".format(self.currentUsr, item)))
+            if(query == []):
+                #######: otherwise item will be the name of the item and that will be used insted
+                self.dataBase.execute("INSERT INTO '{}' (ITEM, QUANTITY) VALUES('{}', {});".format(self.currentUsr, item, int(quantity)))
+            else:
+                self.dataBase.execute("UPDATE '{}' SET QUANTITY = '{}' WHERE ITEM = '{}'".format(self.currentUsr, int(query[0][0]) + int(quantity), item))
+
+            self.dataBase.commit()
 
     def account_window(self):
         acountWindow = tkinter.Toplevel(self.root)
@@ -157,7 +177,28 @@ class gui():
     def basket_window(self):
         basketWindow = tkinter.Toplevel(self.root)
         basketWindow.resizable(False,False)
-    
+        F = tkinter.Frame(basketWindow)
+        F.pack()
+
+        if(self.currentUsr == None):
+            l = tkinter.Label(F, text="Your currently not logged in, please login")
+            l.pack()
+        else:
+            basketLab = tkinter.Label(F, text="Item")
+            basketLab1 = tkinter.Label(F, text="Quantity")
+            basketLab.grid(column=0, row=0)
+            basketLab1.grid(column=1, row=0)
+
+            query = list(self.dataBase.execute("SELECT * FROM '{}'".format(self.currentUsr)))
+
+            ########: itterate trough the 2d array given by the sql
+            for i in range(0, len(query)):
+                for j in range(0, len(query[0])):
+
+                    ########: give each record a seperate label in a grid
+                    l = tkinter.Label(F, text=query[i][j])
+                    l.grid(column=j, row=i + 1)
+
     def logon_window(self):
         logonWindow = tkinter.Toplevel(self.root)
         logonWindow.resizable(False, False)
