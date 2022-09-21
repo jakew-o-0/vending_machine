@@ -59,6 +59,8 @@ class gui():
     def search_window(self, btn):
         dataWindow = tkinter.Toplevel(self.root)
         dataWindow.resizable(False, False)
+        F = tkinter.Frame(dataWindow, padx=5,pady=5)
+        F.grid(column=0,row=0, padx=10,pady=10)
 
         ########: query items database depending on which button is pressed
         if(btn == 1):
@@ -74,8 +76,28 @@ class gui():
             for j in range(0, len(query[0])):
 
                 ########: give each record a seperate label in a grid
-                l = tkinter.Label(dataWindow, text=query[i][j])
+                l = tkinter.Label(F, text=query[i][j])
                 l.grid(column=j, row=i)
+
+            
+        f = tkinter.Frame(dataWindow,padx=5,pady=5)
+        sVAR = tkinter.StringVar(value=1)
+        sVAR1 = tkinter.StringVar()
+        b = tkinter.Button(f, text="Add to basket", comman=lambda: self.add_to_basket(item=sVAR1.get(), quantity=sVAR.get()))
+        e = tkinter.Entry(f, textvariable=sVAR1)
+        l = tkinter.Label(f, text="Item number or name:")
+        l1 = tkinter.Label(f, text="Quantity:")
+        s = tkinter.Spinbox(f, from_=1, to=10, wrap=True, textvariable=sVAR, width=18)
+
+        f.grid(column=1, row=0, padx=10,pady=10)
+        l.grid(column=0, row=0)
+        e.grid(column=1, row=0)
+        b.grid(column=0, row=2, columnspan=2)
+        l1.grid(column=0, row=1)
+        s.grid(column=1, row=1)
+
+    def add_to_basket(self, item, quantity):
+        pass
 
     def account_window(self):
         acountWindow = tkinter.Toplevel(self.root)
