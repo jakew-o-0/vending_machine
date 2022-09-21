@@ -4,8 +4,8 @@ from random import randint
 
 class gui():
     def __init__(self, root):
-        self.dataBase = sqlite3.connect('Vending_Machine.db')
-        self.currentUsr = ""
+        self.dataBase = sqlite3.connect('./Vending_Machine.db')
+        self.currentUsr = None
 
         self.root = root
         self.root.resizable(False,  False)
@@ -60,13 +60,14 @@ class gui():
         dataWindow = tkinter.Toplevel(self.root)
         dataWindow.resizable(False, False)
 
+        ########: query items database depending on which button is pressed
         if(btn == 1):
-            query = list(self.dataBase.execute("SELECT * FROM items WHERE NAME = '{}'".format(str(self.searchStr.get()))))
+            query = list(self.dataBase.execute("SELECT * FROM items WHERE NAME = '{}';".format(str(self.searchStr.get()))))
         else:
             query = list(self.dataBase.execute("SELECT * FROM items;"))
             if(btn == 3):
                 rand = randint(1, len(query))
-                query = list(self.dataBase.execute("SELECT * FROM items WHERE ID = {}".format(rand)))
+                query = list(self.dataBase.execute("SELECT * FROM items WHERE ID = {};".format(rand)))
 
         ########: itterate trough the 2d array given by the sql
         for i in range(0, len(query)):
@@ -76,19 +77,61 @@ class gui():
                 l = tkinter.Label(dataWindow, text=query[i][j])
                 l.grid(column=j, row=i)
 
-
     def account_window(self):
-        acountWindow = tkinter.Toplevel()
+        acountWindow = tkinter.Toplevel(self.root)
         acountWindow.resizable(False,False)
-        
-        acountLab = tkinter.Label(acountWindow, text="Username")
+        acountLab = tkinter.Label(acountWindow)
+
+        ########: desplay appropriate username
+        if(self.currentUsr == None):
+            acountLab.config(text="Your not currently logged in please login") 
+        else:    
+            query = list(self.dataBase.execute("SELECT NAME FROM users WHERE ID = {}".format(self.currentUsr)))
+            acountLab.config(text="Username: {}".format(query[0][0]))
+
         acountLab1 = tkinter.Label(acountWindow, text="Recently bought")
-        acountBtn = tkinter.Button(acountWindow, text="Change Password")
+        acountBtn = tkinter.Button(acountWindow, text="Change Password", command=self.change_passwd)
 
         acountLab.pack()
         acountBtn.pack()
         acountLab1.pack()
-    
+
+    def change_passwd(self):
+        passWindow = tkinter.Toplevel(self.root)
+        passWindow.resizable(False, False)
+
+        #######: gui stuff
+        oldPass = tkinter.StringVar()
+        newPass = tkinter.StringVar()
+        oPassEntry = tkinter.Entry(passWindow, textvariable=oldPass)
+        nPassEntry = tkinter.Entry(passWindow, textvariable=newPass)
+        passLab = tkinter.Label(passWindow, text="Old password:")
+        passLab1 = tkinter.Label(passWindow, text="New password:")
+        passBttn = tkinter.Button(passWindow, text="Enter", command=lambda:self.update_passwd(oPass=oldPass.get(), nPass=newPass.get(), win=passWindow))
+
+        passLab.grid(column=0, row=0)
+        passLab1.grid(column=0, row=1)
+        oPassEntry.grid(column=1, row=0)
+        nPassEntry.grid(column=1, row=1)
+        passBttn.grid(column=0, row=2, columnspan=2)
+
+    def update_passwd(self, oPass, nPass, win):
+        ########: update password and authentication
+        out = tkinter.Label(win)
+        
+        try:
+            passAuth = list(self.dataBase.execute("SELECT PASSWORDS FROM users WHERE ID = '{}'".format(self.currentUsr)))
+            if(self.currentUsr != None and str(oPass) == str(passAuth[0][0])):
+                self.dataBase.execute("UPDATE users SET PASSWORDS = '{}' WHERE ID = '{}'".format(str(nPass), self.currentUsr))
+                out.config(text="Updated password!")
+            else:
+                out.config(text="password was incorrect")
+        except(Exception):
+            out.config(text="something whent wrong")
+        
+        self.dataBase.commit()
+        out.grid(column=0, row=3, columnspan=2)
+
     def basket_window(self):
         basketWindow = tkinter.Toplevel(self.root)
         basketWindow.resizable(False,False)
@@ -117,25 +160,28 @@ class gui():
         logonNewUsr.grid(column=0, row=3)
 
     def login(self, usr, passwd, win):
-        try:
-            out.destroy()
-        except(Exception):
-            pass
         out = tkinter.Label(win)
-        print(self.isNewusr)
+        out.destroy()
 
         if(self.isNewusr == True):
-            query = len(list(self.dataBase.execute("SELECT * FROM users;")))
-            query = self.dataBase.execute("INSERT INTO users (ID, NAME, PASSWORDS) VALUES({},'{}', '{}');".format(query + 1, usr, passwd))
+            ########: adding a newuser into the database
+            query = len(list(self.dataBase.execute("SELECT * FROM users")))
+            self.dataBase.execute("INSERT INTO users (ID, NAME, PASSWORDS) VALUES({},'{}', '{}');".format(query + 1, usr, passwd))
+            self.dataBase.execute("CREATE TABLE '{}'(ITEM TEXT, QUANTITY INT)".format(query + 1)) 
+            out = tkinter.Label(win, text="New account created!")
         else:
+            ########: logging in with correct username and passwords
             try:
-                query = self.dataBase.execute("SELECT NAME, PASSWORDS  FROM users WHERE NAME = '{}' AND PASSWORDS = '{}';".format(str(usr), str(passwd)))
+                query = self.dataBase.execute("SELECT * FROM users WHERE NAME = '{}' AND PASSWORDS = '{}';".format(str(usr), str(passwd)))
                 q = list(query)
+                ########: setting the current user to the id of the user in the data
                 self.currentUsr = q[0][0] 
-                out.config(text="you have been logged in!")
+                out = tkinter.Label(win, text="You have been logged in!")
             except(Exception):
-                out.config(text="Oops username or password is incorrect")
-            out.grid(column=0, row=5, columnspan=2)
+                out = tkinter.Label(win, text="Oops username or password was wrong")
+            
+        out.grid(column=0, row=5, columnspan=2)
+        self.dataBase.commit()
     
     def newusr(self):
         self.isNewusr = not(self.isNewusr)
